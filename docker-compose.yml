@@ -1,0 +1,150 @@
+# Docker Compose Configuration for FinanX Project
+
+# This Docker Compose configuration sets up the entire FinanX system, consisting of:
+# 1. **nginx-proxy**: A reverse proxy to route traffic to different services.
+# 2. **dashboard**: The Angular frontend application for managing finances.
+# 3. **stock-api**: The FastAPI service for stock market analysis and recommendations.
+# 4. **finance-api**: The FastAPI service for handling personal finance management.
+# 5. **finance_db**: The PostgreSQL database for storing user and financial data.
+# 6. **pgadmin**: A web-based interface for managing the PostgreSQL database.
+
+# Service Details:
+
+services:
+  # region nginx-proxy
+  nginx-proxy:
+    build: nginx
+    container_name: nginx
+    hostname: nginx
+    restart: always
+    volumes:
+      - ./nginx/default.conf:/tmp/default.conf
+    environment:
+      - ANGULAR_SERVER_ADDR=${ANGULAR_SERVER_ADDR}
+      - STOCK_API_SERVER_ADDR=${STOCK_API_SERVER_ADDR}
+      - FINANCE_API_SERVER_ADDR=${FINANCE_API_SERVER_ADDR}
+      - PGADMIN_SERVER_ADDR=${PGADMIN_SERVER_ADDR}
+    ports:
+      - "${NGINX_PORT}:${NGINX_PORT}"
+    depends_on:
+      - dashboard
+      - stock-api
+      - finance-api
+      - pgadmin
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:${NGINX_PORT}/health-check || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    command: /usr/local/bin/start.sh
+
+  # region dashboard
+  dashboard:
+    build: dashboard
+    container_name: dashboard
+    hostname: dashboard
+    restart: unless-stopped
+    environment:
+      - NODE_NO_WARNINGS=1
+    volumes:
+      - ./dashboard/src:/usr/src/app/src
+    expose:
+      - "${ANGULAR_PORT}"
+    networks:
+      - frontend
+    command: ng serve --host 0.0.0.0 --port ${ANGULAR_PORT} --poll=2000 --configuration development
+
+  # region stock_api
+  stock-api:
+    build: stock-api
+    container_name: stock-api
+    hostname: stock-api
+    restart: unless-stopped
+    volumes:
+      - ./stock-api/app:/app
+    ports:
+      - "${STOCK_API_PORT}:${STOCK_API_PORT}"
+    expose:
+      - "${STOCK_API_PORT}"
+    depends_on:
+      finance_db:
+        condition: service_healthy
+    networks:
+      - backend
+
+  # region finance_api
+  finance-api:
+    build: finance-api
+    container_name: finance-api
+    hostname: finance-api
+    restart: unless-stopped
+    volumes:
+      - ./finance-api/app:/app
+    ports:
+      - "${FINANCE_API_PORT}:${FINANCE_API_PORT}"
+    expose:
+      - "${FINANCE_API_PORT}"
+    depends_on:
+      finance_db:
+        condition: service_healthy
+    networks:
+      - backend
+
+  # region finance_db
+  finance_db:
+    image: postgres:16
+    container_name: finance_db
+    hostname: finance_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DATABASE}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  # region pgadmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    hostname: pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - backend
+    depends_on:
+      - finance_db
+
+# Networks
+networks:
+  frontend:
+    # The frontend network connects all the frontend-related services, such as the Angular
+    # application and the Nginx proxy.
+  backend:
+    # The backend network connects all the backend-related services, including the finance API, 
+    # stock API, PostgreSQL database, and PGAdmin.
+
+# Volumes
+volumes:
+  postgres_data:
+    # Volume for storing persistent PostgreSQL data.
+  pgadmin_data:
+    # Volume for storing persistent PGAdmin data.

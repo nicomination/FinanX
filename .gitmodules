@@ -1,5 +1,5 @@
-[submodule "nginx"]
-	path = nginx
+[submodule "ngix"]
+	path = ngix
 	url = https://github.com/nicomination/FinanX-NGINX.git
 [submodule "finance-api"]
 	path = finance-api
@@ -10,3 +10,6 @@
 [submodule "dashboard"]
 	path = dashboard
 	url = https://github.com/nicomination/FinanX-Dashboard.git
+[submodule "nginx"]
+	path = nginx
+	url = https://github.com/nicomination/J4arv15_nginx.git
