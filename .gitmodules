@@ -1,0 +1,12 @@
+[submodule "ngix"]
+	path = ngix
+	url = https://github.com/nicomination/FinanX-NGINX.git
+[submodule "finance-api"]
+	path = finance-api
+	url = https://github.com/nicomination/FinanX-Finance-API.git
+[submodule "stock-api"]
+	path = stock-api
+	url = https://github.com/nicomination/FinanX-Stock-API.git
+[submodule "dashboard"]
+	path = dashboard
+	url = https://github.com/nicomination/FinanX-Dashboard.git
