@@ -1,5 +1,5 @@
-[submodule "ngix"]
-	path = ngix
+[submodule "nginx"]
+	path = nginx
 	url = https://github.com/nicomination/FinanX-NGINX.git
 [submodule "finance-api"]
 	path = finance-api
